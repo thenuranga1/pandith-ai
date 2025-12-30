@@ -17,27 +17,27 @@ if "current_chat_id" not in st.session_state:
 if "chat_counter" not in st.session_state:
     st.session_state.chat_counter = 1
 
-# --- CUSTOM CSS (THEME & UI FIXES) ---
+# --- CUSTOM CSS (MATCHING THE INPUT BAR) ---
 st.markdown("""
 <style>
-    /* 1. Main Background - Pitch Black */
+    /* 1. Main Background - Matched to Streamlit Dark Grey */
     .stApp {
-        background-color: #000000;
-        color: #e0e0e0;
+        background-color: #0E1117; /* Standard Dark Theme Background */
+        color: #FAFAFA;
     }
     
-    /* 2. Sidebar - Slightly Lighter Black */
+    /* 2. Sidebar - Slightly Lighter Grey */
     section[data-testid="stSidebar"] {
-        background-color: #050505;
-        border-right: 1px solid #222;
+        background-color: #262730; /* Matches Input Bar Tone */
+        border-right: 1px solid #333;
     }
     
-    /* 3. SIDEBAR BUTTONS & PANELS */
+    /* 3. SIDEBAR PANELS (Cards) */
     div[role="radiogroup"] > label > div:first-child {
         display: none;
     }
     div[role="radiogroup"] > label {
-        background-color: #111 !important;
+        background-color: #0E1117 !important; /* Darker than sidebar */
         border: 1px solid #333 !important;
         padding: 12px 15px !important;
         border-radius: 8px !important;
@@ -47,70 +47,33 @@ st.markdown("""
         display: flex;
     }
     div[role="radiogroup"] > label:hover {
-        background-color: #222 !important;
+        background-color: #333 !important;
         color: white !important;
         border-color: #555 !important;
     }
     div[role="radiogroup"] > label[data-checked="true"] {
-        background-color: #1a1a1a !important;
+        background-color: #000000 !important; /* Active Chat is Black */
         border-color: #fff !important;
         color: white !important;
         font-weight: bold;
     }
 
-    /* --- 4. THE CHAT INPUT FIX (MAJOR) --- */
+    /* 4. CHAT INPUT BLENDING */
+    /* We remove the specific coloring so it uses the Default Theme */
+    /* This ensures it matches the background perfectly */
     
-    /* Remove standard footer spacing */
-    footer {display: none !important;}
-    
-    /* Target the specific container of the chat input */
     div[data-testid="stChatInput"] {
         background-color: transparent !important;
-        bottom: 20px !important; /* Add some spacing from bottom */
-    }
-
-    /* This targets the actual ROUNDED BOX (The one with the color) */
-    div[data-testid="stChatInput"] > div {
-        background-color: #000000 !important; /* PITCH BLACK */
-        border: 1px solid #333333 !important; /* Dark Grey Border */
-        color: white !important;
-        border-radius: 20px !important; /* More rounded like Grok */
-    }
-
-    /* When you click to type (Focus State) */
-    div[data-testid="stChatInput"] > div:focus-within {
-        background-color: #000000 !important; /* Stay Black */
-        border-color: #666666 !important; /* Lighter Grey Border */
-        box-shadow: none !important; /* REMOVE THE BLUE GLOW */
-    }
-
-    /* The text area itself */
-    textarea[data-testid="stChatInputTextArea"] {
-        background-color: transparent !important;
-        color: white !important;
     }
     
-    /* Send Button */
-    button[data-testid="stChatInputSubmitButton"] {
-        background-color: transparent !important;
-        color: #666 !important;
-        border: none !important;
-    }
-    button[data-testid="stChatInputSubmitButton"]:hover {
-        color: white !important;
-    }
-
-    /* Hide Header Decoration */
-    header[data-testid="stHeader"] {
-        background-color: transparent;
-        z-index: 99;
-    }
+    footer {display: none !important;}
+    header[data-testid="stHeader"] {background-color: transparent !important;}
     #MainMenu {visibility: hidden;}
 
 </style>
 """, unsafe_allow_html=True)
 
-# --- AUTO SCROLL JS ---
+# --- AUTO SCROLL ---
 components.html("""
 <script>
     const scrollDown = () => {
@@ -152,6 +115,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Recent Chats")
     
+    # Chat List Panels
     chat_list = list(st.session_state.chats.keys())
     selected_chat = st.radio(
         "Select Chat", 

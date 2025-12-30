@@ -36,7 +36,7 @@ with st.sidebar:
         st.rerun()
 
 # --- CHAT LOGIC ---
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-pro")
 
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "model", "parts": ["ආයුබෝවන්! මම Pandith AI. ඔබට කොහොමද උදව් කරන්නෙ?"]}]

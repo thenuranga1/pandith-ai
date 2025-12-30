@@ -36,9 +36,9 @@ except:
     st.error("⚠️ Secrets හරියට සෙට් වෙලා නෑ.")
     st.stop()
 
-# Hugging Face Configuration (Updated URL)
-# අපි අලුත් Router URL එක සහ Stable Diffusion XL මොඩල් එක පාවිච්චි කරමු.
-API_URL = "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+# Hugging Face Configuration (The Classic Reliable Model)
+# මේ මොඩල් එක (v1.5) කවදාවත් වරදින්නෙ නෑ. 100% Free & Open.
+API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"} if "HF_TOKEN" in st.secrets else None
 
@@ -48,19 +48,20 @@ def query_huggingface(prompt):
     
     payload = {"inputs": prompt}
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        # අපි Timeout එකක් දාමු තත්පර 30ක
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
         
         # 1. Success
         if response.status_code == 200:
             return response.content, None
             
-        # 2. Model Loading (නිදාගෙන නම්)
+        # 2. Loading
         elif "estimated_time" in response.text:
-            return None, "⚠️ Model එක Load වෙමින් පවතී. කරුණාකර තත්පර 30කින් පමණ නැවත උත්සාහ කරන්න."
+            return None, "⚠️ Model එක Load වෙමින් පවතී. කරුණාකර තත්පර 20කින් නැවත උත්සාහ කරන්න."
         
-        # 3. Moved / Error (410, 404 etc)
+        # 3. Other Errors
         else:
-            return None, f"API Error: {response.status_code} - {response.text}"
+            return None, f"API Error: {response.status_code} - {response.reason}"
             
     except Exception as e:
         return None, f"Connection Error: {str(e)}"
@@ -70,7 +71,7 @@ with st.sidebar:
     st.title("Pandith AI 🧠")
     st.caption("Developed by a Sri Lankan Developer 🇱🇰")
     st.markdown("---")
-    st.markdown("✅ **Text:** Llama 3.3 (Groq)\n\n✅ **Images:** Stable Diffusion XL")
+    st.markdown("✅ **Text:** Llama 3.3 (Groq)\n\n✅ **Images:** Stable Diffusion v1.5")
     
     if st.button("Clear Chat / New Chat 🗑️"):
         st.session_state.messages = []
@@ -126,7 +127,7 @@ if prompt := st.chat_input("ප්‍රශ්නය හෝ පින්තූ�
 
             # 2. Check for Image Request
             if "###GENERATE_IMAGE###" in full_response:
-                message_placeholder.markdown("පින්තූරය නිර්මාණය කරමින් (High Quality)... 🎨")
+                message_placeholder.markdown("පින්තූරය නිර්මාණය කරමින්... 🎨")
                 image_prompt = full_response.replace("###GENERATE_IMAGE###", "").strip()
                 
                 # Hugging Face Call

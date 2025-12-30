@@ -17,51 +17,50 @@ if "current_chat_id" not in st.session_state:
 if "chat_counter" not in st.session_state:
     st.session_state.chat_counter = 1
 
-# --- CUSTOM CSS (MATCHING THE INPUT BAR) ---
+# --- CUSTOM CSS ---
 st.markdown("""
 <style>
-    /* 1. Main Background - Matched to Streamlit Dark Grey */
+    /* 1. Main Background */
     .stApp {
-        background-color: #0E1117; /* Standard Dark Theme Background */
+        background-color: #0E1117;
         color: #FAFAFA;
     }
     
-    /* 2. Sidebar - Slightly Lighter Grey */
+    /* 2. Sidebar Background */
     section[data-testid="stSidebar"] {
-        background-color: #262730; /* Matches Input Bar Tone */
+        background-color: #262730;
         border-right: 1px solid #333;
     }
     
-    /* 3. SIDEBAR PANELS (Cards) */
+    /* 3. SIDEBAR CHAT PANELS (ChatGPT Style) */
     div[role="radiogroup"] > label > div:first-child {
         display: none;
     }
     div[role="radiogroup"] > label {
-        background-color: #0E1117 !important; /* Darker than sidebar */
-        border: 1px solid #333 !important;
-        padding: 12px 15px !important;
-        border-radius: 8px !important;
-        margin-bottom: 8px !important;
-        color: #aaa !important;
+        background-color: transparent !important; /* Transparent initially */
+        border: 1px solid transparent !important;
+        padding: 10px 15px !important;
+        border-radius: 12px !important; /* ROUNDED CORNERS LIKE CHATGPT */
+        margin-bottom: 5px !important;
+        color: #ddd !important;
         width: 100%;
         display: flex;
+        transition: all 0.2s ease;
     }
+    /* Hover Effect */
     div[role="radiogroup"] > label:hover {
         background-color: #333 !important;
         color: white !important;
-        border-color: #555 !important;
     }
+    /* Selected Panel */
     div[role="radiogroup"] > label[data-checked="true"] {
-        background-color: #000000 !important; /* Active Chat is Black */
-        border-color: #fff !important;
+        background-color: #1a1a1a !important; /* Darker highlight */
+        border: 1px solid #444 !important;
         color: white !important;
-        font-weight: bold;
+        font-weight: 600;
     }
 
     /* 4. CHAT INPUT BLENDING */
-    /* We remove the specific coloring so it uses the Default Theme */
-    /* This ensures it matches the background perfectly */
-    
     div[data-testid="stChatInput"] {
         background-color: transparent !important;
     }
@@ -100,9 +99,24 @@ with st.sidebar:
         st.image("logo.png", width=70)
     except:
         pass 
-        
-    st.markdown("### Pandith")
-    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True) 
+    
+    # --- LOGO AREA WITH EXPERIMENTAL TAG ---
+    st.markdown("""
+        <div style="margin-top: -10px; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 2.2rem; font-weight: 700; color: white;">Pandith</h1>
+            <span style="
+                background-color: #FFC107; 
+                color: #000000; 
+                padding: 2px 8px; 
+                border-radius: 6px; 
+                font-size: 0.7rem; 
+                font-weight: bold; 
+                display: inline-block;
+                margin-top: 5px;
+                letter-spacing: 0.5px;
+            ">EXPERIMENTAL</span>
+        </div>
+    """, unsafe_allow_html=True)
     
     # New Chat Button
     if st.button("+ New Chat", use_container_width=True):
@@ -115,7 +129,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Recent Chats")
     
-    # Chat List Panels
+    # Chat List
     chat_list = list(st.session_state.chats.keys())
     selected_chat = st.radio(
         "Select Chat", 

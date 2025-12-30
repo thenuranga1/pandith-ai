@@ -3,7 +3,7 @@ from groq import Groq
 import requests
 import io
 from PIL import Image
-import time
+import urllib.parse
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -36,42 +36,43 @@ except:
     st.error("⚠️ Secrets හරියට සෙට් වෙලා නෑ.")
     st.stop()
 
-# Hugging Face Configuration (The Classic Reliable Model)
-# මේ මොඩල් එක (v1.5) කවදාවත් වරදින්නෙ නෑ. 100% Free & Open.
-API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+# --- IMAGE GENERATION FUNCTIONS ---
 
-headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"} if "HF_TOKEN" in st.secrets else None
+# 1. Hugging Face (Primary Option)
+HF_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
+hf_headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"} if "HF_TOKEN" in st.secrets else None
 
-def query_huggingface(prompt):
-    if not headers:
-        return None, "Error: HF_TOKEN not found in secrets."
-    
-    payload = {"inputs": prompt}
+def generate_image_hf(prompt):
+    if not hf_headers:
+        return None
     try:
-        # අපි Timeout එකක් දාමු තත්පර 30ක
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-        
-        # 1. Success
+        response = requests.post(HF_API_URL, headers=hf_headers, json={"inputs": prompt}, timeout=15)
         if response.status_code == 200:
-            return response.content, None
-            
-        # 2. Loading
-        elif "estimated_time" in response.text:
-            return None, "⚠️ Model එක Load වෙමින් පවතී. කරුණාකර තත්පර 20කින් නැවත උත්සාහ කරන්න."
-        
-        # 3. Other Errors
+            return Image.open(io.BytesIO(response.content))
         else:
-            return None, f"API Error: {response.status_code} - {response.reason}"
-            
-    except Exception as e:
-        return None, f"Connection Error: {str(e)}"
+            return None # HF Failed
+    except:
+        return None # Connection Failed
+
+# 2. Pollinations AI (Backup Option)
+def generate_image_pollinations(prompt):
+    try:
+        encoded_prompt = urllib.parse.quote(prompt)
+        url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?nologo=true"
+        response = requests.get(url, timeout=15)
+        if response.status_code == 200:
+            return Image.open(io.BytesIO(response.content))
+        return None
+    except:
+        return None
 
 # --- SIDEBAR ---
 with st.sidebar:
     st.title("Pandith AI 🧠")
-    st.caption("Developed by a Sri Lankan Developer 🇱🇰")
+    st.caption("Sri Lankan AI 🇱🇰")
     st.markdown("---")
-    st.markdown("✅ **Text:** Llama 3.3 (Groq)\n\n✅ **Images:** Stable Diffusion v1.5")
+    st.markdown("✅ **Text:** Llama 3.3 (Groq)")
+    st.markdown("✅ **Images:** Hybrid Engine (HF + Backup)")
     
     if st.button("Clear Chat / New Chat 🗑️"):
         st.session_state.messages = []
@@ -83,7 +84,7 @@ CRITICAL: If the user asks for an image/picture/drawing, start your response wit
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. ඔබට අවශ්‍ය පින්තූරයක් කියන්න."})
+    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. ඔබට අවශ්‍ය පින්තූරයක් කියන්න. මම ක්‍රම දෙකකින් උත්සාහ කර පින්තූරය ලබා දෙන්නම්."})
 
 # Display History
 for message in st.session_state.messages:
@@ -130,25 +131,34 @@ if prompt := st.chat_input("ප්‍රශ්නය හෝ පින්තූ�
                 message_placeholder.markdown("පින්තූරය නිර්මාණය කරමින්... 🎨")
                 image_prompt = full_response.replace("###GENERATE_IMAGE###", "").strip()
                 
-                # Hugging Face Call
-                image_bytes, error_msg = query_huggingface(image_prompt)
+                # --- HYBRID GENERATION LOGIC ---
+                final_image = None
+                source = ""
+
+                # Attempt 1: Hugging Face (High Quality)
+                final_image = generate_image_hf(image_prompt)
+                source = "Hugging Face"
                 
-                if image_bytes:
-                    try:
-                        image = Image.open(io.BytesIO(image_bytes))
-                        message_placeholder.empty()
-                        st.image(image, caption=f"Generated: {image_prompt}", use_column_width=True)
-                        
-                        st.session_state.messages.append({
-                            "role": "assistant", 
-                            "content": image, 
-                            "caption": image_prompt,
-                            "type": "image"
-                        })
-                    except:
-                        message_placeholder.error("Error: රූපය පෙන්වීමට නොහැක.")
+                # Attempt 2: Pollinations (Backup if HF fails)
+                if final_image is None:
+                    # message_placeholder.markdown("Server Busy. Backup Server භාවිතා කරමින්... 🔄")
+                    final_image = generate_image_pollinations(image_prompt)
+                    source = "Backup Server"
+
+                # Display Result
+                if final_image:
+                    message_placeholder.empty()
+                    st.image(final_image, caption=f"Generated: {image_prompt} ({source})", use_column_width=True)
+                    
+                    st.session_state.messages.append({
+                        "role": "assistant", 
+                        "content": final_image, 
+                        "caption": f"{image_prompt} ({source})",
+                        "type": "image"
+                    })
                 else:
-                    message_placeholder.error(error_msg)
+                    message_placeholder.error("Error: පින්තූරය සෑදීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.")
+
             else:
                 message_placeholder.markdown(full_response)
                 st.session_state.messages.append({"role": "assistant", "content": full_response})

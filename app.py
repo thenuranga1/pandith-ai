@@ -32,19 +32,27 @@ st.markdown("""
         border-right: 1px solid #333;
     }
     
-    /* 3. SIDEBAR CHAT PANELS (ChatGPT Style) */
+    /* 3. SIDEBAR CHAT PANELS (Full Width Strips) */
+    div[role="radiogroup"] {
+        width: 100% !important;
+    }
     div[role="radiogroup"] > label > div:first-child {
         display: none;
     }
     div[role="radiogroup"] > label {
-        background-color: transparent !important; /* Transparent initially */
+        background-color: transparent !important;
         border: 1px solid transparent !important;
         padding: 10px 15px !important;
-        border-radius: 12px !important; /* ROUNDED CORNERS LIKE CHATGPT */
-        margin-bottom: 5px !important;
+        border-radius: 8px !important;
+        margin-bottom: 4px !important;
         color: #ddd !important;
-        width: 100%;
-        display: flex;
+        
+        /* FORCE FULL WIDTH STRIP LOOK */
+        width: 100% !important;
+        display: flex !important;
+        justify-content: flex-start !important; /* Align text to left */
+        align-items: center !important;
+        
         transition: all 0.2s ease;
     }
     /* Hover Effect */
@@ -54,7 +62,7 @@ st.markdown("""
     }
     /* Selected Panel */
     div[role="radiogroup"] > label[data-checked="true"] {
-        background-color: #1a1a1a !important; /* Darker highlight */
+        background-color: #1a1a1a !important;
         border: 1px solid #444 !important;
         color: white !important;
         font-weight: 600;
@@ -100,20 +108,19 @@ with st.sidebar:
     except:
         pass 
     
-    # --- LOGO AREA WITH EXPERIMENTAL TAG ---
+    # --- LOGO AREA (FIXED: Tag closer and smaller) ---
     st.markdown("""
-        <div style="margin-top: -10px; margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 2.2rem; font-weight: 700; color: white;">Pandith</h1>
+        <div style="display: flex; align-items: center; margin-bottom: 20px; gap: 10px;">
+            <h1 style="margin: 0; padding: 0; font-size: 2.2rem; font-weight: 700; color: white; line-height: 1;">Pandith</h1>
             <span style="
                 background-color: #FFC107; 
                 color: #000000; 
-                padding: 2px 8px; 
-                border-radius: 6px; 
-                font-size: 0.7rem; 
-                font-weight: bold; 
-                display: inline-block;
-                margin-top: 5px;
+                padding: 1px 6px; 
+                border-radius: 4px; 
+                font-size: 0.5rem; 
+                font-weight: 800; 
                 letter-spacing: 0.5px;
+                transform: translateY(-2px); /* Slight lift */
             ">EXPERIMENTAL</span>
         </div>
     """, unsafe_allow_html=True)

@@ -9,10 +9,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- GLASSMORPHISM CSS (THE NEXT LEVEL UI) ---
+# --- ULTIMATE GLASSMORPHISM CSS ---
 st.markdown("""
 <style>
-    /* 1. Animated Background */
+    /* 1. Moving Gradient Background (Darker & Smoother) */
     @keyframes gradient-animation {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
@@ -20,76 +20,82 @@ st.markdown("""
     }
     
     .stApp {
-        background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #141e30);
+        background: linear-gradient(-45deg, #000000, #1e1e1e, #232526, #414345);
         background-size: 400% 400%;
         animation: gradient-animation 15s ease infinite;
-        color: white;
+        color: #e0e0e0;
     }
 
-    /* 2. Sidebar Glass Effect */
+    /* 2. SIDEBAR GLASS EFFECT (The Fix) */
     section[data-testid="stSidebar"] {
-        background-color: rgba(0, 0, 0, 0.3) !important; /* Semi-transparent */
-        backdrop-filter: blur(15px); /* Blur effect */
+        background-color: rgba(255, 255, 255, 0.05); /* Very transparent white */
+        backdrop-filter: blur(20px); /* Heavy Blur */
         border-right: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
     }
     
-    /* 3. Chat Input - Floating Glass Bar */
+    /* Ensure text in sidebar is visible */
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3, 
+    section[data-testid="stSidebar"] p, 
+    section[data-testid="stSidebar"] span {
+        color: #ffffff !important;
+        text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    /* 3. Header & Menu Button (Make it transparent but VISIBLE) */
+    header[data-testid="stHeader"] {
+        background: transparent;
+        z-index: 999;
+    }
+    /* Menu Button Color */
+    button[kind="header"] {
+        color: white !important;
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 10px;
+    }
+
+    /* 4. Chat Input - Floating Neon Glass */
     .stTextInput {
         position: fixed;
-        bottom: 40px;
+        bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
-        width: 70%;
-        z-index: 999;
+        width: 60%;
+        z-index: 1000;
     }
     
     .stTextInput > div > div > input {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(0, 0, 0, 0.3);
         color: white;
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 30px;
         backdrop-filter: blur(10px);
-        padding: 15px 20px;
-        font-size: 16px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        padding: 12px 20px;
     }
     
     .stTextInput > div > div > input:focus {
         border-color: #00d2ff;
-        box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
     }
 
-    /* 4. Hide Default Streamlit Elements */
-    #MainMenu {visibility: hidden;}
+    /* 5. Messages - Bubbles */
+    .stChatMessage {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 10px;
+        margin-bottom: 10px;
+        backdrop-filter: blur(5px);
+    }
+
+    /* Hide Footer */
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     
-    /* 5. Custom Code Block Style */
-    code {
-        color: #00d2ff;
-        background-color: rgba(0,0,0,0.5);
-        border-radius: 5px;
-        padding: 2px 5px;
-    }
-    
-    /* 6. Buttons */
-    div.stButton > button {
-        background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
-        color: white;
-        border: none;
-        border-radius: 20px;
-        padding: 10px 20px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    div.stButton > button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
-    }
-    
-    /* Adjust main container to not hide behind fixed input */
+    /* Main container padding so input doesn't cover text */
     .main .block-container {
-        padding-bottom: 120px; 
+        padding-bottom: 100px;
     }
 
 </style>
@@ -109,26 +115,24 @@ except:
 # --- SIDEBAR ---
 with st.sidebar:
     st.title("Pandith AI 🧠")
-    st.markdown("<p style='color: rgba(255,255,255,0.7);'>Next Gen Sri Lankan AI</p>", unsafe_allow_html=True)
     st.markdown("---")
-    st.success("✅ Engine: **Llama 3.3 (Groq)**")
-    st.info("🎨 UI: **Glassmorphism v2.0**")
+    st.info("✅ Engine: **Llama 3.3**")
+    st.success("✨ UI: **Glassmorphism**")
     
     st.markdown("---")
-    if st.button("Clear Chat 🗑️"):
+    # Custom Glass Button
+    if st.button("Clear Chat 🗑️", type="primary"):
         st.session_state.messages = []
         st.rerun()
 
 # --- CHAT LOGIC ---
-
-# System Instruction
-system_prompt = """You are Pandith AI (පණ්ඩිත් AI), a futuristic and advanced AI assistant.
+system_prompt = """You are Pandith AI (පණ්ඩිත් AI).
 Answer primarily in Sinhala.
-CRITICAL: If the user asks for an image, do NOT generate one. Instead, generate a highly detailed English prompt starting with '###PROMPT_ONLY###'."""
+CRITICAL: If the user asks for an image, generate a prompt starting with '###PROMPT_ONLY###'."""
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. අලුත් මුහුණුවරකින් මම ඔබව සාදරයෙන් පිළිගන්නවා. 😎"})
+    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. මම දැන් අලුත් Glass UI එකකින්."})
 
 # Display History
 for message in st.session_state.messages:
@@ -140,22 +144,17 @@ for message in st.session_state.messages:
 
 # Input
 if prompt := st.chat_input("මෙහි ලියන්න..."):
-    # User Message
     st.chat_message("user", avatar="👤").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # AI Response
     with st.chat_message("assistant", avatar="🧠"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("Searching Neural Net... ⚡")
+        message_placeholder.markdown("Processing... ⚡")
         
         try:
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    *st.session_state.messages
-                ],
+                messages=[{"role": "system", "content": system_prompt}, *st.session_state.messages],
                 temperature=0.7,
                 max_tokens=1024,
                 stream=True
@@ -170,7 +169,7 @@ if prompt := st.chat_input("මෙහි ලියන්න..."):
 
             if "###PROMPT_ONLY###" in full_response:
                 prompt_text = full_response.replace("###PROMPT_ONLY###", "").strip()
-                final_output = f"🌌 **Image Prompt Generated:**\n\n```text\n{prompt_text}\n```\n_Copy this to Midjourney or Firefly_"
+                final_output = f"🎨 **Image Prompt:**\n```text\n{prompt_text}\n```"
                 message_placeholder.markdown(final_output)
                 st.session_state.messages.append({"role": "assistant", "content": final_output})
             else:
@@ -178,4 +177,4 @@ if prompt := st.chat_input("මෙහි ලියන්න..."):
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
 
         except Exception as e:
-            message_placeholder.error(f"System Malfunction: {e}")
+            message_placeholder.error(f"Error: {e}")

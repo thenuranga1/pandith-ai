@@ -1,82 +1,60 @@
 import streamlit as st
 from groq import Groq
+import datetime
 
-# --- PAGE CONFIGURATION (Favicon Setup) ---
-# මෙතන page_icon එකට අපි logo.png දුන්නම Browser Tab එකේ Logo එක වැටෙනවා.
+# --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="Pandith AI",
+    page_title="Pandith (පණ්ඩිත්)",
     page_icon="logo.png", 
     layout="wide"
 )
 
-# --- THEME SWITCHER LOGIC ---
-# Sidebar එකේ උඩින්ම Switch එක දාමු
-with st.sidebar:
-    st.image("logo.png", width=80) # Sidebar එකෙත් Logo එක පෙන්නමු
-    st.markdown("### Settings")
-    theme_mode = st.toggle("⚫ Dark Mode", value=True)
+# --- SESSION STATE SETUP (Multi-Chat Logic) ---
+if "chats" not in st.session_state:
+    # මුල්ම Chat එක
+    st.session_state.chats = {"Chat 1": []}
+if "current_chat_id" not in st.session_state:
+    st.session_state.current_chat_id = "Chat 1"
+if "chat_counter" not in st.session_state:
+    st.session_state.chat_counter = 1
 
-# --- GROK STYLE CSS (DYNAMIC) ---
-# Switch එක On/Off වෙන විදිහට පාට මාරු වෙන කෝඩ් එක
-if theme_mode:
-    # DARK MODE (Grok Style)
-    bg_color = "#000000"
-    text_color = "#ffffff"
-    input_bg = "#121212"
-    sidebar_bg = "#0a0a0a"
-    border_color = "#333333"
-else:
-    # LIGHT MODE
-    bg_color = "#ffffff"
-    text_color = "#000000"
-    input_bg = "#f7f7f7"
-    sidebar_bg = "#f0f0f0"
-    border_color = "#e0e0e0"
-
-st.markdown(f"""
+# --- THEME & CSS ---
+# Sidebar එක වැහුවම ආයෙ ගන්න පුලුවන් වෙන්න Header එක හැදුවා.
+st.markdown("""
 <style>
-    /* Main Background */
-    .stApp {{
-        background-color: {bg_color};
-        color: {text_color};
-    }}
+    /* Main Dark Theme */
+    .stApp {
+        background-color: #000000;
+        color: #ffffff;
+    }
     
     /* Sidebar Background */
-    section[data-testid="stSidebar"] {{
-        background-color: {sidebar_bg};
-        border-right: 1px solid {border_color};
-    }}
+    section[data-testid="stSidebar"] {
+        background-color: #0a0a0a;
+        border-right: 1px solid #333333;
+    }
     
-    /* Text Input Styling (Minimalist) */
-    .stTextInput > div > div > input {{
-        background-color: {input_bg};
-        color: {text_color};
-        border: 1px solid {border_color};
-        border-radius: 8px; /* Slight curve like Grok */
-        padding: 10px 15px;
-    }}
-    
-    /* Focus Color */
-    .stTextInput > div > div > input:focus {{
-        border-color: {text_color};
-        box-shadow: none;
-    }}
-
-    /* Headers & Text */
-    h1, h2, h3, p, div, span {{
-        color: {text_color} !important;
-        font-family: 'Segoe UI', sans-serif; /* Clean font */
-    }}
-
-    /* Chat Messages Background */
-    .stChatMessage {{
+    /* Fix: Show Sidebar Toggle Button */
+    header[data-testid="stHeader"] {
         background-color: transparent;
-    }}
-
-    /* Remove Streamlit Extras */
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
+        z-index: 999;
+    }
+    /* Hide decorative line but keep the button */
+    .stApp > header {
+        background-color: transparent;
+    }
+    
+    /* Input Box */
+    .stTextInput > div > div > input {
+        background-color: #121212;
+        color: white;
+        border: 1px solid #333333;
+        border-radius: 8px;
+    }
+    
+    /* Remove Streamlit Footer only */
+    footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;} /* Hide 3 dots menu if you want */
     
 </style>
 """, unsafe_allow_html=True)
@@ -92,50 +70,83 @@ except:
     st.error("⚠️ Secrets Error.")
     st.stop()
 
-# --- SIDEBAR CONTENT ---
+# --- SIDEBAR: CHAT MANAGEMENT ---
 with st.sidebar:
-    st.markdown("---")
-    st.markdown(f"**Pandith AI** v2.0")
-    if st.button("New Chat +", use_container_width=True):
-        st.session_state.messages = []
+    # Logo & Name
+    try:
+        st.image("logo.png", width=80)
+    except:
+        pass # Logo එක නැත්නම් අවුලක් නෑ
+        
+    st.markdown("### Pandith (පණ්ඩිත්)")
+    
+    # New Chat Button
+    if st.button("➕ New Chat", use_container_width=True):
+        st.session_state.chat_counter += 1
+        new_chat_name = f"Chat {st.session_state.chat_counter}"
+        st.session_state.chats[new_chat_name] = []
+        st.session_state.current_chat_id = new_chat_name
         st.rerun()
 
-# --- CHAT LOGIC ---
-system_prompt = """You are Pandith AI. You are helpful, direct, and minimalist. 
-Answer primarily in Sinhala.
-If asked for an image, provide a prompt starting with ###PROMPT_ONLY###."""
+    st.markdown("---")
+    st.markdown("**Your Chats:**")
+    
+    # Chat List (Radio Button to switch)
+    chat_list = list(st.session_state.chats.keys())
+    # Reverse list to show newest on top
+    selected_chat = st.radio(
+        "Select Chat", 
+        chat_list[::-1], 
+        index=0 if st.session_state.current_chat_id not in chat_list else chat_list[::-1].index(st.session_state.current_chat_id),
+        label_visibility="collapsed"
+    )
+    
+    # Update Current Chat ID
+    if selected_chat != st.session_state.current_chat_id:
+        st.session_state.current_chat_id = selected_chat
+        st.rerun()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-    # Initial Greeting
-    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්."})
+# --- SYSTEM PROMPT (BRAIN) ---
+# මෙතන තමයි නිර්මාතෘගේ නම සහ Pandith ගේ නම කොටලා තියෙන්නෙ.
+system_prompt = """You are Pandith (පණ්ඩිත්). You are a helpful, direct, and minimalist AI assistant. 
+Answer primarily in Sinhala.
+
+CRITICAL RULES:
+1. Your name is ONLY "Pandith (පණ්ඩිත්)". Do not use "Pandith AI".
+2. If the user asks who created/made/developed you, you MUST answer: "මාව නිර්මාණය කලේ Thenuranga Dhananjaya විසින්." (Created by Thenuranga Dhananjaya).
+3. If asked for an image, provide a prompt starting with ###PROMPT_ONLY###.
+"""
+
+# --- LOAD CURRENT CHAT HISTORY ---
+current_messages = st.session_state.chats[st.session_state.current_chat_id]
+
+# Initial Greeting if empty
+if not current_messages:
+    current_messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම පණ්ඩිත් (Pandith)."})
 
 # Display History
-for message in st.session_state.messages:
+for message in st.session_state.chats[st.session_state.current_chat_id]:
     role = "user" if message["role"] == "user" else "assistant"
-    
-    # AVATAR LOGIC:
-    # User -> 👤 (Default Icon)
-    # Assistant -> logo.png (Your Custom Logo)
     avatar = "👤" if role == "user" else "logo.png"
     
     with st.chat_message(role, avatar=avatar):
         st.markdown(message["content"])
 
-# Input Area
-if prompt := st.chat_input("Ask Pandith..."):
-    # User Message
+# --- CHAT INPUT & LOGIC ---
+if prompt := st.chat_input("මෙහි ලියන්න..."):
+    # 1. Add User Message to UI & History
     st.chat_message("user", avatar="👤").markdown(prompt)
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.chats[st.session_state.current_chat_id].append({"role": "user", "content": prompt})
 
-    # AI Response
+    # 2. Generate AI Response
     with st.chat_message("assistant", avatar="logo.png"):
         message_placeholder = st.empty()
         
         try:
+            # Send context to Groq
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": system_prompt}, *st.session_state.messages],
+                messages=[{"role": "system", "content": system_prompt}, *st.session_state.chats[st.session_state.current_chat_id]],
                 temperature=0.7,
                 stream=True
             )
@@ -147,15 +158,18 @@ if prompt := st.chat_input("Ask Pandith..."):
                     if "###PROMPT_ONLY###" not in full_response:
                         message_placeholder.markdown(full_response + "▌")
             
-            # Formatting Response
+            # 3. Handle Output
+            final_content = full_response
+            
             if "###PROMPT_ONLY###" in full_response:
                 prompt_text = full_response.replace("###PROMPT_ONLY###", "").strip()
-                final_output = f"**Prompt:**\n```text\n{prompt_text}\n```"
-                message_placeholder.markdown(final_output)
-                st.session_state.messages.append({"role": "assistant", "content": final_output})
+                final_content = f"**Image Prompt:**\n```text\n{prompt_text}\n```"
+                message_placeholder.markdown(final_content)
             else:
                 message_placeholder.markdown(full_response)
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+            # 4. Save AI Message to History
+            st.session_state.chats[st.session_state.current_chat_id].append({"role": "assistant", "content": final_content})
 
         except Exception as e:
             message_placeholder.error(f"Error: {e}")

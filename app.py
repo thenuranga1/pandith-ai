@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM CSS (Pro & Minimalist UI) ---
+# --- CUSTOM CSS ---
 st.markdown("""
 <style>
     .stApp { background-color: #0E1117; color: white; }
@@ -26,7 +26,7 @@ try:
     if "GROQ_API_KEY" in st.secrets:
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
     else:
-        st.error("⚠️ API Key එක දාලා නෑ! කරුණාකර Streamlit Settings වලට GROQ_API_KEY එක ඇතුලත් කරන්න.")
+        st.error("⚠️ API Key එක දාලා නෑ! Settings වලට GROQ_API_KEY එක දාන්න.")
         st.stop()
 except Exception as e:
     st.error(f"⚠️ Connection Error: {e}")
@@ -42,40 +42,34 @@ with st.sidebar:
         st.rerun()
     
     st.markdown("---")
-    st.markdown("Powered by **Groq (Llama 3)**")
+    st.markdown("Powered by **Llama 3.3 (Groq)**")
 
 # --- CHAT LOGIC ---
-
-# Initialize History
 if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.messages.append({
         "role": "assistant", 
-        "content": "ආයුබෝවන්! මම Pandith AI. මම Groq තාක්ෂණයෙන් බලගැන්වී ඇත. ඔබට කොහොමද උදව් කරන්නෙ?"
+        "content": "ආයුබෝවන්! මම Pandith AI. මම අලුත්ම Llama 3.3 තාක්ෂණයෙන් බලගැන්වී ඇත. ඔබට කොහොමද උදව් කරන්නෙ?"
     })
 
-# Display Chat History
 for message in st.session_state.messages:
     role = "user" if message["role"] == "user" else "assistant"
     avatar = "👤" if role == "user" else "🧠"
     with st.chat_message(role, avatar=avatar):
         st.markdown(message["content"])
 
-# Chat Input & Response
 if prompt := st.chat_input("ඔබේ ප්‍රශ්නය මෙතන අසන්න..."):
-    # User Message
     st.chat_message("user", avatar="👤").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # AI Response
     with st.chat_message("assistant", avatar="🧠"):
         message_placeholder = st.empty()
         message_placeholder.markdown("සිතමින් පවතී... ⚡")
         
         try:
-            # Generate Answer using Groq
+            # Generate Answer using NEW MODEL
             completion = client.chat.completions.create(
-                model="llama3-70b-8192", # පට්ටම Advanced Model එකක්
+                model="llama-3.3-70b-versatile",  # <--- මම මෙන්න මේක වෙනස් කලා අලුත් එකට
                 messages=[
                     {"role": "system", "content": "You are Pandith AI (පණ්ඩිත් AI), a helpful AI assistant. You answer primarily in Sinhala. If the question is in English, answer in English. Be concise and helpful."},
                     *st.session_state.messages

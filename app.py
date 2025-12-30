@@ -17,10 +17,10 @@ if "current_chat_id" not in st.session_state:
 if "chat_counter" not in st.session_state:
     st.session_state.chat_counter = 1
 
-# --- CUSTOM CSS (THEME & COLOR FIXES) ---
+# --- CUSTOM CSS (PITCH BLACK THEME FIXES) ---
 st.markdown("""
 <style>
-    /* 1. Main Dark Theme */
+    /* 1. Main Dark Theme (Background) */
     .stApp {
         background-color: #000000;
         color: #e0e0e0;
@@ -28,93 +28,97 @@ st.markdown("""
     
     /* 2. Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background-color: #050505;
-        border-right: 1px solid #222;
+        background-color: #050505; /* Almost black sidebar */
+        border-right: 1px solid #1a1a1a;
     }
     
-    /* 3. SIDEBAR CHAT PANELS */
+    /* 3. SIDEBAR PANELS (Advanced Radio Button Styling) */
     div[role="radiogroup"] > label > div:first-child {
-        display: none;
+        display: none; /* Hide default radio circles */
     }
     div[role="radiogroup"] > label {
-        background-color: #111;
-        border: 1px solid #333;
-        padding: 12px 15px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        color: #aaa;
-        display: flex;
+        background-color: #0f0f0f !important;
+        border: 1px solid #222 !important;
+        padding: 12px 15px !important;
+        border-radius: 8px !important;
+        margin-bottom: 8px !important;
+        color: #888 !important;
         width: 100%;
+        display: flex;
+        justify-content: flex-start;
+        transition: all 0.2s;
     }
+    /* Hover Effect */
     div[role="radiogroup"] > label:hover {
-        background-color: #1a1a1a;
-        border-color: #555;
-        color: white;
+        background-color: #1a1a1a !important;
+        color: white !important;
+        border-color: #444 !important;
     }
+    /* Selected Panel (Active Chat) */
     div[role="radiogroup"] > label[data-checked="true"] {
-        background-color: #222;
-        border-color: #fff;
-        color: white;
+        background-color: #1a1a1a !important;
+        border-color: #ffffff !important;
+        color: white !important;
         font-weight: bold;
     }
 
-    /* 4. CHAT INPUT BAR STYLING (FIXED BLACK COLOR) */
+    /* 4. CHAT INPUT BAR STYLING (THE REAL FIX) */
     
-    /* Input Container Background - Force Transparent */
-    .stChatInput {
+    /* Make the bottom container transparent so it doesn't look grey */
+    footer {display: none !important;}
+    .stApp > header {background-color: transparent !important;}
+    
+    /* Target the input box wrapper specifically */
+    div[data-testid="stChatInput"] {
         background-color: transparent !important;
     }
-
-    /* The actual text box container */
+    
+    /* This is the actual box where you type - FORCE BLACK */
     div[data-testid="stChatInput"] > div {
-        background-color: #0a0a0a !important; /* Almost Black */
-        border-color: #333 !important; /* Dark Grey Border */
+        background-color: #000000 !important; /* Pitch Black */
+        border: 1px solid #333 !important; /* Dark Border */
         color: white !important;
-        border-radius: 12px !important;
+        border-radius: 15px !important;
     }
-
-    /* Remove the annoying Blue Glow on Focus */
-    div[data-testid="stChatInput"] > div:focus-within {
-        border-color: #666 !important; /* Light Grey when typing */
-        box-shadow: none !important; /* Kill the blue glow */
-    }
-
-    /* The typing text area itself */
+    
+    /* Typing Text Color */
     textarea[data-testid="stChatInputTextArea"] {
         color: white !important;
-        background-color: transparent !important;
+        caret-color: white !important; /* Blinking cursor color */
     }
     
-    /* Submit Button Color Fix */
+    /* Remove Blue Glow on Focus */
+    div[data-testid="stChatInput"] > div:focus-within {
+        border-color: #666 !important;
+        box-shadow: none !important;
+    }
+    
+    /* Send Button Icon Color */
     button[data-testid="stChatInputSubmitButton"] {
-        color: #888 !important;
+        color: #666 !important;
     }
     button[data-testid="stChatInputSubmitButton"]:hover {
         color: white !important;
     }
     
-    /* 5. Header & Footer Visibility */
+    /* 5. Header Visibility (Keep Sidebar Toggle) */
     header[data-testid="stHeader"] {
         background-color: transparent;
         z-index: 999;
     }
-    footer {visibility: hidden;}
     #MainMenu {visibility: hidden;}
 
 </style>
 """, unsafe_allow_html=True)
 
-# --- JAVASCRIPT FOR AUTO-SCROLL ---
+# --- AUTO-SCROLL SCRIPT ---
 components.html("""
 <script>
-    window.onload = function() {
+    const scrollDown = () => {
         window.scrollTo(0, document.body.scrollHeight);
     }
-    setTimeout(function() {
-        window.scrollTo(0, document.body.scrollHeight);
-    }, 500);
+    window.onload = scrollDown;
+    setInterval(scrollDown, 1000); // Check every second to keep it scrolled
 </script>
 """, height=0, width=0)
 
@@ -137,9 +141,11 @@ with st.sidebar:
         pass 
         
     st.markdown("### Pandith")
-    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True) 
     
-    if st.button("+ New Chat", use_container_width=True, type="primary"):
+    # 1. FIXED BUTTON: "+ New Chat" (No Emoji, Primary Red Style Removed if you want black)
+    # If you want it black/grey to match theme, remove type="primary". 
+    # I kept it standard to blend in.
+    if st.button("+ New Chat", use_container_width=True):
         st.session_state.chat_counter += 1
         new_chat_name = f"Chat {st.session_state.chat_counter}"
         st.session_state.chats[new_chat_name] = []
@@ -147,8 +153,9 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.caption("Your Chats")
+    st.caption("Recent Chats")
     
+    # 2. FIXED PANELS: The CSS above handles the look
     chat_list = list(st.session_state.chats.keys())
     selected_chat = st.radio(
         "Select Chat", 
@@ -161,27 +168,24 @@ with st.sidebar:
         st.session_state.current_chat_id = selected_chat
         st.rerun()
 
-# --- SYSTEM PROMPT (SAGE PERSONA) ---
+# --- SYSTEM PROMPT ---
 system_prompt = """You are Pandith. 
-You are a wise, calm, and disciplined Sage (Rishi / ඍෂිවරයෙක්).
+You are a wise, calm, and disciplined Sage (Rishi).
 Your tone is always serene, polite, and fatherly.
 
 CRITICAL INSTRUCTIONS:
-1. **Addressing:** Always address the user affectionately as "දරුවා" (Child) or "දරුවො".
-2. **Name:** Your name is "Pandith". Only use the Sinhala name "පණ්ඩිත්" if the user specifically asks "What is your name?" in Sinhala.
-3. **Creator:** If asked who created/made you, you MUST answer: "මාව නිර්මාණය කලේ Thenuranga Dhananjaya විසින්."
-4. **Behavior:** Speak calmly. Do not use overly modern slang. Be profound yet simple.
-5. **Images:** If asked for an image, provide a prompt starting with ###PROMPT_ONLY###.
+1. Address user as "දරුවා" (Child).
+2. Name: "Pandith". Use "පණ්ඩිත්" only if asked in Sinhala.
+3. Creator: "Thenuranga Dhananjaya".
+4. If asked for an image, provide a prompt starting with ###PROMPT_ONLY###.
 """
 
 # --- LOAD HISTORY ---
 current_messages = st.session_state.chats[st.session_state.current_chat_id]
-
-# Initial Greeting
 if not current_messages:
     current_messages.append({"role": "assistant", "content": "ආයුබෝවන්!"})
 
-# Display Messages
+# --- DISPLAY CHAT ---
 for message in st.session_state.chats[st.session_state.current_chat_id]:
     role = "user" if message["role"] == "user" else "assistant"
     avatar = "👤" if role == "user" else "logo.png"
@@ -189,14 +193,13 @@ for message in st.session_state.chats[st.session_state.current_chat_id]:
     with st.chat_message(role, avatar=avatar):
         st.markdown(message["content"])
 
-# --- INPUT ---
+# --- CHAT INPUT ---
 if prompt := st.chat_input("මෙහි ලියන්න..."):
     st.chat_message("user", avatar="👤").markdown(prompt)
     st.session_state.chats[st.session_state.current_chat_id].append({"role": "user", "content": prompt})
 
     with st.chat_message("assistant", avatar="logo.png"):
         message_placeholder = st.empty()
-        
         try:
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -204,7 +207,6 @@ if prompt := st.chat_input("මෙහි ලියන්න..."):
                 temperature=0.7,
                 stream=True
             )
-            
             full_response = ""
             for chunk in completion:
                 if chunk.choices[0].delta.content:
@@ -213,7 +215,6 @@ if prompt := st.chat_input("මෙහි ලියන්න..."):
                         message_placeholder.markdown(full_response + "▌")
             
             final_content = full_response
-            
             if "###PROMPT_ONLY###" in full_response:
                 prompt_text = full_response.replace("###PROMPT_ONLY###", "").strip()
                 final_content = f"**Prompt:**\n```text\n{prompt_text}\n```"

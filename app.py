@@ -36,10 +36,9 @@ except:
     st.error("⚠️ Secrets හරියට සෙට් වෙලා නෑ.")
     st.stop()
 
-# Hugging Face Configuration
-# අපි මොඩල් එක විදිහට වේගවත් සහ ලස්සන "Flux" හෝ "Stable Diffusion" එකක් ගමු.
-API_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev" 
-# (මෙතන FLUX වැඩ නැත්නම් 'stabilityai/stable-diffusion-xl-base-1.0' දාන්න පුළුවන්)
+# Hugging Face Configuration (Updated URL)
+# අපි අලුත් Router URL එක සහ Stable Diffusion XL මොඩල් එක පාවිච්චි කරමු.
+API_URL = "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
 
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"} if "HF_TOKEN" in st.secrets else None
 
@@ -51,15 +50,15 @@ def query_huggingface(prompt):
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
         
-        # 1. හරියටම පින්තූරේ ආවා නම් (Success)
+        # 1. Success
         if response.status_code == 200:
             return response.content, None
             
-        # 2. මොඩල් එක Load වෙනවා නම් (Model Loading)
+        # 2. Model Loading (නිදාගෙන නම්)
         elif "estimated_time" in response.text:
-            return None, "⚠️ Model එක Load වෙමින් පවතී. කරුණාකර තත්පර 30කින් නැවත උත්සාහ කරන්න."
-            
-        # 3. වෙනත් Error එකක් නම්
+            return None, "⚠️ Model එක Load වෙමින් පවතී. කරුණාකර තත්පර 30කින් පමණ නැවත උත්සාහ කරන්න."
+        
+        # 3. Moved / Error (410, 404 etc)
         else:
             return None, f"API Error: {response.status_code} - {response.text}"
             
@@ -71,7 +70,7 @@ with st.sidebar:
     st.title("Pandith AI 🧠")
     st.caption("Developed by a Sri Lankan Developer 🇱🇰")
     st.markdown("---")
-    st.markdown("✅ **Text:** Llama 3.3 (Groq)\n\n✅ **Images:** FLUX.1 (HuggingFace)")
+    st.markdown("✅ **Text:** Llama 3.3 (Groq)\n\n✅ **Images:** Stable Diffusion XL")
     
     if st.button("Clear Chat / New Chat 🗑️"):
         st.session_state.messages = []
@@ -83,7 +82,7 @@ CRITICAL: If the user asks for an image/picture/drawing, start your response wit
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. ඔබට අවශ්‍ය පින්තූරයක් කියන්න, මම නිර්මාණය කර දෙන්නම්."})
+    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. ඔබට අවශ්‍ය පින්තූරයක් කියන්න."})
 
 # Display History
 for message in st.session_state.messages:
@@ -107,7 +106,7 @@ if prompt := st.chat_input("ප්‍රශ්නය හෝ පින්තූ�
         message_placeholder.markdown("සිතමින් පවතී... ⚡")
         
         try:
-            # 1. Groq එකෙන් Text එක ගන්න
+            # 1. Get Text from Groq
             clean_history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"]
             
             completion = client.chat.completions.create(
@@ -125,12 +124,12 @@ if prompt := st.chat_input("ප්‍රශ්නය හෝ පින්තූ�
                     if "###GENERATE_IMAGE###" not in full_response:
                         message_placeholder.markdown(full_response + "▌")
 
-            # 2. Image එකක් ඉල්ලුවාද බලන්න
+            # 2. Check for Image Request
             if "###GENERATE_IMAGE###" in full_response:
                 message_placeholder.markdown("පින්තූරය නිර්මාණය කරමින් (High Quality)... 🎨")
                 image_prompt = full_response.replace("###GENERATE_IMAGE###", "").strip()
                 
-                # Hugging Face එකට යවන්න
+                # Hugging Face Call
                 image_bytes, error_msg = query_huggingface(image_prompt)
                 
                 if image_bytes:
@@ -146,9 +145,8 @@ if prompt := st.chat_input("ප්‍රශ්නය හෝ පින්තූ�
                             "type": "image"
                         })
                     except:
-                        message_placeholder.error("Error: රූපය පෙන්වීමට නොහැක. නැවත උත්සාහ කරන්න.")
+                        message_placeholder.error("Error: රූපය පෙන්වීමට නොහැක.")
                 else:
-                    # Error එක මොකක්ද කියලා හරියටම පෙන්නන්න
                     message_placeholder.error(error_msg)
             else:
                 message_placeholder.markdown(full_response)

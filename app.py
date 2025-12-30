@@ -1,6 +1,6 @@
 import streamlit as st
 from groq import Groq
-import datetime
+import streamlit.components.v1 as components
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -17,41 +17,96 @@ if "current_chat_id" not in st.session_state:
 if "chat_counter" not in st.session_state:
     st.session_state.chat_counter = 1
 
-# --- THEME & CSS ---
+# --- CUSTOM CSS (THEME & UI FIXES) ---
 st.markdown("""
 <style>
-    /* Main Dark Theme (Minimalist) */
+    /* 1. Main Dark Theme */
     .stApp {
         background-color: #000000;
         color: #e0e0e0;
     }
     
-    /* Sidebar */
+    /* 2. Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background-color: #0a0a0a;
-        border-right: 1px solid #333333;
+        background-color: #050505;
+        border-right: 1px solid #222;
     }
     
-    /* Header (Transparent to keep sidebar toggle visible) */
+    /* 3. SIDEBAR CHAT PANELS (Radio Button Hack) */
+    /* Hide the default radio circles */
+    div[role="radiogroup"] > label > div:first-child {
+        display: none;
+    }
+    /* Style the labels as Panels/Cards */
+    div[role="radiogroup"] > label {
+        background-color: #111;
+        border: 1px solid #333;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #aaa;
+        display: flex;
+        width: 100%;
+    }
+    /* Hover Effect */
+    div[role="radiogroup"] > label:hover {
+        background-color: #1a1a1a;
+        border-color: #555;
+        color: white;
+    }
+    /* Selected Panel Effect */
+    div[role="radiogroup"] > label[data-checked="true"] {
+        background-color: #222;
+        border-color: #fff;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(255,255,255,0.05);
+    }
+
+    /* 4. CHAT INPUT BAR STYLING (Dark Theme Fix) */
+    /* The container */
+    .stChatInput {
+        background-color: transparent !important;
+    }
+    /* The actual input box */
+    .stChatInput textarea {
+        background-color: #111 !important;
+        color: white !important;
+        border: 1px solid #333 !important;
+        border-radius: 10px !important;
+    }
+    /* Focus state */
+    .stChatInput textarea:focus {
+        border-color: #666 !important;
+        box-shadow: none !important;
+    }
+    
+    /* 5. Header & Footer Visibility */
     header[data-testid="stHeader"] {
         background-color: transparent;
         z-index: 999;
     }
-    
-    /* Input Box */
-    .stTextInput > div > div > input {
-        background-color: #121212;
-        color: white;
-        border: 1px solid #333333;
-        border-radius: 8px;
-    }
-    
-    /* Hide Footer */
     footer {visibility: hidden;}
     #MainMenu {visibility: hidden;}
-    
+
 </style>
 """, unsafe_allow_html=True)
+
+# --- JAVASCRIPT FOR AUTO-SCROLL (Jump to Bottom) ---
+# This script runs on every reload to ensure we are at the bottom
+components.html("""
+<script>
+    window.onload = function() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+    // Also try to scroll after a small delay to catch dynamic content
+    setTimeout(function() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }, 500);
+</script>
+""", height=0, width=0)
 
 # --- API SETUP ---
 try:
@@ -67,13 +122,15 @@ except:
 # --- SIDEBAR ---
 with st.sidebar:
     try:
-        st.image("logo.png", width=80)
+        st.image("logo.png", width=70)
     except:
         pass 
         
     st.markdown("### Pandith")
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True) # Spacer
     
-    if st.button("➕ New Chat", use_container_width=True):
+    # Updated Button Text: + New Chat
+    if st.button("+ New Chat", use_container_width=True, type="primary"):
         st.session_state.chat_counter += 1
         new_chat_name = f"Chat {st.session_state.chat_counter}"
         st.session_state.chats[new_chat_name] = []
@@ -81,8 +138,9 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("**Your Chats:**")
+    st.caption("Your Chats")
     
+    # Custom Styled Radio Button List
     chat_list = list(st.session_state.chats.keys())
     selected_chat = st.radio(
         "Select Chat", 
@@ -111,7 +169,7 @@ CRITICAL INSTRUCTIONS:
 # --- LOAD HISTORY ---
 current_messages = st.session_state.chats[st.session_state.current_chat_id]
 
-# Initial Greeting (Simple)
+# Initial Greeting
 if not current_messages:
     current_messages.append({"role": "assistant", "content": "ආයුබෝවන්!"})
 

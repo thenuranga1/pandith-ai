@@ -17,7 +17,7 @@ if "current_chat_id" not in st.session_state:
 if "chat_counter" not in st.session_state:
     st.session_state.chat_counter = 1
 
-# --- CUSTOM CSS (THEME & UI FIXES) ---
+# --- CUSTOM CSS (THEME & COLOR FIXES) ---
 st.markdown("""
 <style>
     /* 1. Main Dark Theme */
@@ -32,12 +32,10 @@ st.markdown("""
         border-right: 1px solid #222;
     }
     
-    /* 3. SIDEBAR CHAT PANELS (Radio Button Hack) */
-    /* Hide the default radio circles */
+    /* 3. SIDEBAR CHAT PANELS */
     div[role="radiogroup"] > label > div:first-child {
         display: none;
     }
-    /* Style the labels as Panels/Cards */
     div[role="radiogroup"] > label {
         background-color: #111;
         border: 1px solid #333;
@@ -50,37 +48,51 @@ st.markdown("""
         display: flex;
         width: 100%;
     }
-    /* Hover Effect */
     div[role="radiogroup"] > label:hover {
         background-color: #1a1a1a;
         border-color: #555;
         color: white;
     }
-    /* Selected Panel Effect */
     div[role="radiogroup"] > label[data-checked="true"] {
         background-color: #222;
         border-color: #fff;
         color: white;
         font-weight: bold;
-        box-shadow: 0 0 10px rgba(255,255,255,0.05);
     }
 
-    /* 4. CHAT INPUT BAR STYLING (Dark Theme Fix) */
-    /* The container */
+    /* 4. CHAT INPUT BAR STYLING (FIXED BLACK COLOR) */
+    
+    /* Input Container Background - Force Transparent */
     .stChatInput {
         background-color: transparent !important;
     }
-    /* The actual input box */
-    .stChatInput textarea {
-        background-color: #111 !important;
+
+    /* The actual text box container */
+    div[data-testid="stChatInput"] > div {
+        background-color: #0a0a0a !important; /* Almost Black */
+        border-color: #333 !important; /* Dark Grey Border */
         color: white !important;
-        border: 1px solid #333 !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
     }
-    /* Focus state */
-    .stChatInput textarea:focus {
-        border-color: #666 !important;
-        box-shadow: none !important;
+
+    /* Remove the annoying Blue Glow on Focus */
+    div[data-testid="stChatInput"] > div:focus-within {
+        border-color: #666 !important; /* Light Grey when typing */
+        box-shadow: none !important; /* Kill the blue glow */
+    }
+
+    /* The typing text area itself */
+    textarea[data-testid="stChatInputTextArea"] {
+        color: white !important;
+        background-color: transparent !important;
+    }
+    
+    /* Submit Button Color Fix */
+    button[data-testid="stChatInputSubmitButton"] {
+        color: #888 !important;
+    }
+    button[data-testid="stChatInputSubmitButton"]:hover {
+        color: white !important;
     }
     
     /* 5. Header & Footer Visibility */
@@ -94,14 +106,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- JAVASCRIPT FOR AUTO-SCROLL (Jump to Bottom) ---
-# This script runs on every reload to ensure we are at the bottom
+# --- JAVASCRIPT FOR AUTO-SCROLL ---
 components.html("""
 <script>
     window.onload = function() {
         window.scrollTo(0, document.body.scrollHeight);
     }
-    // Also try to scroll after a small delay to catch dynamic content
     setTimeout(function() {
         window.scrollTo(0, document.body.scrollHeight);
     }, 500);
@@ -127,9 +137,8 @@ with st.sidebar:
         pass 
         
     st.markdown("### Pandith")
-    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True) # Spacer
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True) 
     
-    # Updated Button Text: + New Chat
     if st.button("+ New Chat", use_container_width=True, type="primary"):
         st.session_state.chat_counter += 1
         new_chat_name = f"Chat {st.session_state.chat_counter}"
@@ -140,7 +149,6 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Your Chats")
     
-    # Custom Styled Radio Button List
     chat_list = list(st.session_state.chats.keys())
     selected_chat = st.radio(
         "Select Chat", 

@@ -3,6 +3,7 @@ from groq import Groq
 import requests
 import io
 from PIL import Image
+import time
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -25,7 +26,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- API SETUP ---
-# Check for Groq Key
 try:
     if "GROQ_API_KEY" in st.secrets:
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -36,40 +36,54 @@ except:
     st.error("⚠️ Secrets හරියට සෙට් වෙලා නෑ.")
     st.stop()
 
-# Hugging Face Configuration (Free Reliable Image API)
-API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+# Hugging Face Configuration
+# අපි මොඩල් එක විදිහට වේගවත් සහ ලස්සන "Flux" හෝ "Stable Diffusion" එකක් ගමු.
+API_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev" 
+# (මෙතන FLUX වැඩ නැත්නම් 'stabilityai/stable-diffusion-xl-base-1.0' දාන්න පුළුවන්)
+
 headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"} if "HF_TOKEN" in st.secrets else None
 
 def query_huggingface(prompt):
     if not headers:
-        return None
+        return None, "Error: HF_TOKEN not found in secrets."
+    
+    payload = {"inputs": prompt}
     try:
-        response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
-        return response.content
-    except:
-        return None
+        response = requests.post(API_URL, headers=headers, json=payload)
+        
+        # 1. හරියටම පින්තූරේ ආවා නම් (Success)
+        if response.status_code == 200:
+            return response.content, None
+            
+        # 2. මොඩල් එක Load වෙනවා නම් (Model Loading)
+        elif "estimated_time" in response.text:
+            return None, "⚠️ Model එක Load වෙමින් පවතී. කරුණාකර තත්පර 30කින් නැවත උත්සාහ කරන්න."
+            
+        # 3. වෙනත් Error එකක් නම්
+        else:
+            return None, f"API Error: {response.status_code} - {response.text}"
+            
+    except Exception as e:
+        return None, f"Connection Error: {str(e)}"
 
 # --- SIDEBAR ---
 with st.sidebar:
     st.title("Pandith AI 🧠")
     st.caption("Developed by a Sri Lankan Developer 🇱🇰")
     st.markdown("---")
-    st.markdown("✅ **Text:** Llama 3.3 (Groq)\n\n✅ **Images:** Stable Diffusion XL")
+    st.markdown("✅ **Text:** Llama 3.3 (Groq)\n\n✅ **Images:** FLUX.1 (HuggingFace)")
     
     if st.button("Clear Chat / New Chat 🗑️"):
         st.session_state.messages = []
         st.rerun()
 
 # --- CHAT LOGIC ---
-
-# System Prompt
-system_prompt = """You are Pandith AI (පණ්ඩිත් AI), a helpful AI assistant.
-Answer primarily in Sinhala.
-CRITICAL: If the user asks for an image, start your response with "###GENERATE_IMAGE###" followed by the English prompt."""
+system_prompt = """You are Pandith AI (පණ්ඩිත් AI). Answer primarily in Sinhala.
+CRITICAL: If the user asks for an image/picture/drawing, start your response with "###GENERATE_IMAGE###" followed by a detailed English prompt."""
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. ඔබට ඕනෑම පින්තූරයක් දැන් උසස් තත්වයෙන් (HD) නිර්මාණය කරගන්න පුළුවන්."})
+    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. ඔබට අවශ්‍ය පින්තූරයක් කියන්න, මම නිර්මාණය කර දෙන්නම්."})
 
 # Display History
 for message in st.session_state.messages:
@@ -93,7 +107,7 @@ if prompt := st.chat_input("ප්‍රශ්නය හෝ පින්තූ�
         message_placeholder.markdown("සිතමින් පවතී... ⚡")
         
         try:
-            # 1. Get Text/Prompt from Groq
+            # 1. Groq එකෙන් Text එක ගන්න
             clean_history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages if m.get("type") != "image"]
             
             completion = client.chat.completions.create(
@@ -111,37 +125,34 @@ if prompt := st.chat_input("ප්‍රශ්නය හෝ පින්තූ�
                     if "###GENERATE_IMAGE###" not in full_response:
                         message_placeholder.markdown(full_response + "▌")
 
-            # 2. Check for Image Request
+            # 2. Image එකක් ඉල්ලුවාද බලන්න
             if "###GENERATE_IMAGE###" in full_response:
                 message_placeholder.markdown("පින්තූරය නිර්මාණය කරමින් (High Quality)... 🎨")
                 image_prompt = full_response.replace("###GENERATE_IMAGE###", "").strip()
                 
-                if not headers:
-                    message_placeholder.error("⚠️ Hugging Face Token එක දාලා නෑ Secrets වලට!")
+                # Hugging Face එකට යවන්න
+                image_bytes, error_msg = query_huggingface(image_prompt)
+                
+                if image_bytes:
+                    try:
+                        image = Image.open(io.BytesIO(image_bytes))
+                        message_placeholder.empty()
+                        st.image(image, caption=f"Generated: {image_prompt}", use_column_width=True)
+                        
+                        st.session_state.messages.append({
+                            "role": "assistant", 
+                            "content": image, 
+                            "caption": image_prompt,
+                            "type": "image"
+                        })
+                    except:
+                        message_placeholder.error("Error: රූපය පෙන්වීමට නොහැක. නැවත උත්සාහ කරන්න.")
                 else:
-                    # Call Hugging Face API
-                    image_bytes = query_huggingface(image_prompt)
-                    
-                    if image_bytes:
-                        try:
-                            image = Image.open(io.BytesIO(image_bytes))
-                            message_placeholder.empty()
-                            st.image(image, caption=f"Generated: {image_prompt}", use_column_width=True)
-                            
-                            # Save image to history (special format)
-                            st.session_state.messages.append({
-                                "role": "assistant", 
-                                "content": image, 
-                                "caption": image_prompt,
-                                "type": "image"
-                            })
-                        except:
-                            message_placeholder.error("Error loading image. Try again.")
-                    else:
-                        message_placeholder.error("Image generation failed. Server busy.")
+                    # Error එක මොකක්ද කියලා හරියටම පෙන්නන්න
+                    message_placeholder.error(error_msg)
             else:
                 message_placeholder.markdown(full_response)
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
 
         except Exception as e:
-            message_placeholder.error(f"Error: {e}")
+            message_placeholder.error(f"System Error: {e}")

@@ -1,103 +1,83 @@
 import streamlit as st
 from groq import Groq
 
-# --- PAGE CONFIGURATION ---
+# --- PAGE CONFIGURATION (Favicon Setup) ---
+# මෙතන page_icon එකට අපි logo.png දුන්නම Browser Tab එකේ Logo එක වැටෙනවා.
 st.set_page_config(
     page_title="Pandith AI",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_icon="logo.png", 
+    layout="wide"
 )
 
-# --- ULTIMATE GLASSMORPHISM CSS ---
-st.markdown("""
+# --- THEME SWITCHER LOGIC ---
+# Sidebar එකේ උඩින්ම Switch එක දාමු
+with st.sidebar:
+    st.image("logo.png", width=80) # Sidebar එකෙත් Logo එක පෙන්නමු
+    st.markdown("### Settings")
+    theme_mode = st.toggle("⚫ Dark Mode", value=True)
+
+# --- GROK STYLE CSS (DYNAMIC) ---
+# Switch එක On/Off වෙන විදිහට පාට මාරු වෙන කෝඩ් එක
+if theme_mode:
+    # DARK MODE (Grok Style)
+    bg_color = "#000000"
+    text_color = "#ffffff"
+    input_bg = "#121212"
+    sidebar_bg = "#0a0a0a"
+    border_color = "#333333"
+else:
+    # LIGHT MODE
+    bg_color = "#ffffff"
+    text_color = "#000000"
+    input_bg = "#f7f7f7"
+    sidebar_bg = "#f0f0f0"
+    border_color = "#e0e0e0"
+
+st.markdown(f"""
 <style>
-    /* 1. Moving Gradient Background (Darker & Smoother) */
-    @keyframes gradient-animation {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
+    /* Main Background */
+    .stApp {{
+        background-color: {bg_color};
+        color: {text_color};
+    }}
     
-    .stApp {
-        background: linear-gradient(-45deg, #000000, #1e1e1e, #232526, #414345);
-        background-size: 400% 400%;
-        animation: gradient-animation 15s ease infinite;
-        color: #e0e0e0;
-    }
-
-    /* 2. SIDEBAR GLASS EFFECT (The Fix) */
-    section[data-testid="stSidebar"] {
-        background-color: rgba(255, 255, 255, 0.05); /* Very transparent white */
-        backdrop-filter: blur(20px); /* Heavy Blur */
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-    }
+    /* Sidebar Background */
+    section[data-testid="stSidebar"] {{
+        background-color: {sidebar_bg};
+        border-right: 1px solid {border_color};
+    }}
     
-    /* Ensure text in sidebar is visible */
-    section[data-testid="stSidebar"] h1, 
-    section[data-testid="stSidebar"] h2, 
-    section[data-testid="stSidebar"] h3, 
-    section[data-testid="stSidebar"] p, 
-    section[data-testid="stSidebar"] span {
-        color: #ffffff !important;
-        text-shadow: 0 0 10px rgba(0,0,0,0.5);
-    }
-
-    /* 3. Header & Menu Button (Make it transparent but VISIBLE) */
-    header[data-testid="stHeader"] {
-        background: transparent;
-        z-index: 999;
-    }
-    /* Menu Button Color */
-    button[kind="header"] {
-        color: white !important;
-        background-color: rgba(255,255,255,0.1);
-        border-radius: 10px;
-    }
-
-    /* 4. Chat Input - Floating Neon Glass */
-    .stTextInput {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 60%;
-        z-index: 1000;
-    }
+    /* Text Input Styling (Minimalist) */
+    .stTextInput > div > div > input {{
+        background-color: {input_bg};
+        color: {text_color};
+        border: 1px solid {border_color};
+        border-radius: 8px; /* Slight curve like Grok */
+        padding: 10px 15px;
+    }}
     
-    .stTextInput > div > div > input {
-        background-color: rgba(0, 0, 0, 0.3);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 30px;
-        backdrop-filter: blur(10px);
-        padding: 12px 20px;
-    }
+    /* Focus Color */
+    .stTextInput > div > div > input:focus {{
+        border-color: {text_color};
+        box-shadow: none;
+    }}
+
+    /* Headers & Text */
+    h1, h2, h3, p, div, span {{
+        color: {text_color} !important;
+        font-family: 'Segoe UI', sans-serif; /* Clean font */
+    }}
+
+    /* Chat Messages Background */
+    .stChatMessage {{
+        background-color: transparent;
+    }}
+
+    /* Remove Streamlit Extras */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
     
-    .stTextInput > div > div > input:focus {
-        border-color: #00d2ff;
-        box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
-    }
-
-    /* 5. Messages - Bubbles */
-    .stChatMessage {
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 15px;
-        padding: 10px;
-        margin-bottom: 10px;
-        backdrop-filter: blur(5px);
-    }
-
-    /* Hide Footer */
-    footer {visibility: hidden;}
-    
-    /* Main container padding so input doesn't cover text */
-    .main .block-container {
-        padding-bottom: 100px;
-    }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,57 +86,57 @@ try:
     if "GROQ_API_KEY" in st.secrets:
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
     else:
-        st.error("⚠️ GROQ API Key එක දාලා නෑ!")
+        st.error("⚠️ GROQ API Key Missing!")
         st.stop()
 except:
-    st.error("⚠️ Secrets හරියට සෙට් වෙලා නෑ.")
+    st.error("⚠️ Secrets Error.")
     st.stop()
 
-# --- SIDEBAR ---
+# --- SIDEBAR CONTENT ---
 with st.sidebar:
-    st.title("Pandith AI 🧠")
     st.markdown("---")
-    st.info("✅ Engine: **Llama 3.3**")
-    st.success("✨ UI: **Glassmorphism**")
-    
-    st.markdown("---")
-    # Custom Glass Button
-    if st.button("Clear Chat 🗑️", type="primary"):
+    st.markdown(f"**Pandith AI** v2.0")
+    if st.button("New Chat +", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
 # --- CHAT LOGIC ---
-system_prompt = """You are Pandith AI (පණ්ඩිත් AI).
+system_prompt = """You are Pandith AI. You are helpful, direct, and minimalist. 
 Answer primarily in Sinhala.
-CRITICAL: If the user asks for an image, generate a prompt starting with '###PROMPT_ONLY###'."""
+If asked for an image, provide a prompt starting with ###PROMPT_ONLY###."""
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්! මම Pandith AI. මම දැන් අලුත් Glass UI එකකින්."})
+    # Initial Greeting
+    st.session_state.messages.append({"role": "assistant", "content": "ආයුබෝවන්."})
 
 # Display History
 for message in st.session_state.messages:
     role = "user" if message["role"] == "user" else "assistant"
-    avatar = "👤" if role == "user" else "🧠"
+    
+    # AVATAR LOGIC:
+    # User -> 👤 (Default Icon)
+    # Assistant -> logo.png (Your Custom Logo)
+    avatar = "👤" if role == "user" else "logo.png"
     
     with st.chat_message(role, avatar=avatar):
         st.markdown(message["content"])
 
-# Input
-if prompt := st.chat_input("මෙහි ලියන්න..."):
+# Input Area
+if prompt := st.chat_input("Ask Pandith..."):
+    # User Message
     st.chat_message("user", avatar="👤").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    with st.chat_message("assistant", avatar="🧠"):
+    # AI Response
+    with st.chat_message("assistant", avatar="logo.png"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("Processing... ⚡")
         
         try:
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "system", "content": system_prompt}, *st.session_state.messages],
                 temperature=0.7,
-                max_tokens=1024,
                 stream=True
             )
             
@@ -166,10 +146,11 @@ if prompt := st.chat_input("මෙහි ලියන්න..."):
                     full_response += chunk.choices[0].delta.content
                     if "###PROMPT_ONLY###" not in full_response:
                         message_placeholder.markdown(full_response + "▌")
-
+            
+            # Formatting Response
             if "###PROMPT_ONLY###" in full_response:
                 prompt_text = full_response.replace("###PROMPT_ONLY###", "").strip()
-                final_output = f"🎨 **Image Prompt:**\n```text\n{prompt_text}\n```"
+                final_output = f"**Prompt:**\n```text\n{prompt_text}\n```"
                 message_placeholder.markdown(final_output)
                 st.session_state.messages.append({"role": "assistant", "content": final_output})
             else:
